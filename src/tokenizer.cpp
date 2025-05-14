@@ -37,6 +37,7 @@ namespace PLY
         exit(5);
       }
   }
+  return tokens;
 }
   std::optional<char> Tokenizer::peek(int ahead) const{
     if(index_+ ahead > str_.length())

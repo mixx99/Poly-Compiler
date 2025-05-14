@@ -11,7 +11,7 @@ namespace PLY{
     std::optional<NodeExit> Parser::parse(){
       std::optional<NodeExit> exit_node;
       while(peek().has_value()){
-        if(peek().has_value() && peek().value().type == TokenType::_exit){
+        if(peek().value().type == TokenType::_exit){
           pullToken();
           if(auto node_expr = parse_expr()){
             NodeExit tempNodeExit;
@@ -35,12 +35,10 @@ namespace PLY{
         return {};
       return tokens_[index_];
     }
-
     std::optional<NodeExpr> Parser::parse_expr(){
       if(peek().has_value() && peek().value().type == TokenType::int_lit){
         NodeExpr nodeexpr;
         nodeexpr.int_lit = pullToken();
-        return nodeexpr;
         return nodeexpr;
       }
       return {};

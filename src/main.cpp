@@ -6,76 +6,9 @@
 #include <string>
 #include <stdexcept>
 
-#define FAIL_EXIT {std::cerr << "Invalid syntax!"; throw std::runtime_error("Invalid syntax");}
+#include "../include/generation.hpp"
 
-enum class TokenType{
-  _return,
-  int_lit,
-  semi
-};
-
-struct Token{
-  TokenType type;
-  std::optional<std::string> value;
-};
-
-std::string token_to_asm(std::vector<Token> tokens){
-  std::stringstream output;
-  output << "global start\n_start:\n";
-for(int i = 0; i < tokens.size(); ++i){
-  Token token = tokens[i];
-  if(token.type == TokenType::_return){
-    if(i + 2 > tokens.size() || i + 1 > tokens.size())
-      FAIL_EXIT;
-    if(tokens[i+1].type != TokenType::int_lit)
-      FAIL_EXIT;
-    if(tokens[i+2].type != TokenType::semi)
-      FAIL_EXIT;
-    output << "    mov rax, 60\n";
-    output << "    mov rdi, " << tokens[i+1].value.value() << '\n';
-    output << "syscall";
-    }
-  }
-  return output.str();
-}
-
-
-std::vector<Token> tokenize(const std::string& str){
-  std::vector<Token> result;
-  std::string buffer;
-  for(int i = 0;i < str.length(); i++){
-    buffer.clear();
-
-    if(std::isalpha(str[i])){
-      while(std::isalnum(str[i])){
-        buffer.push_back(str[i]);
-        i++;
-      }
-      i--;
-      if(buffer == "return"){
-        result.push_back(Token());
-        result.back().type = TokenType::_return;
-      } else std::cout << "FUCKED UP\n";
-      buffer.clear();
-    }
-    if(std::isdigit(str[i])){
-      while(std::isdigit(str[i])){
-        buffer.push_back(str[i]);
-        i++;
-      }
-      i--;
-      result.push_back(Token());
-      result.back().type = TokenType::int_lit;
-      result.back().value = buffer;
-      buffer.clear();
-    }
-    if(str[i] == ';'){
-      result.push_back(Token());
-      result.back().type = TokenType::semi;
-    }
-  }
-  return result;
-}
+using namespace PLY;
 
 
 int main(const int argc, const char** argv){
@@ -90,12 +23,20 @@ int main(const int argc, const char** argv){
   std::string content = contents_stream.str();
   file.close();
 
-  std::vector<Token> tokens = tokenize(content);
+  Tokenizer tokenizer(content);
 
-  std::fstream output_file("out.asm", std::ios::out);
-  output_file << token_to_asm(tokens);
-  output_file.close();
+  std::vector<Token> tokens = tokenizer.tokenize();
+  Parser parser(tokens);
+  std::optional<NodeExit> tree = parser.parse();
 
+  if(!tree.has_value())
+    throw std::runtime_error("No exit statement found");
+
+  Generator generator(tree.value());
+  {
+    std::fstream file("out.asm", std::ios::out);
+    file << generator.generate();
+  }
   system("nasm -felf64 out.asm");
   system("ld -o out out.o");
 

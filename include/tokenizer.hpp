@@ -27,7 +27,6 @@ public:
 
 public: // ctors
   Tokenizer(const std::string& other) : str_(other){}
-  Tokenizer(const std::string&& other) : str_(other){}
 public:
   std::vector<Token> tokenize();
 private:
